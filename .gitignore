@@ -1,0 +1,11 @@
+
+target/
+dbt_packages/
+logs/
+
+# Security: Never commit RSA keys
+*.p8
+*.pub
+
+# Local dbt profiles (contains credentials)
+profiles.yml
