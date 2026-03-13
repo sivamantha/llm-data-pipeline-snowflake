@@ -31,7 +31,7 @@ jobs:
       - name: 4. Reconstruct RSA Key
         # This securely takes your massive text key from GitHub Secrets and turns it back into a file
         run: |
-          echo "${{ secrets.SNOWFLAKE_PRIVATE_KEY }}" > rsa_key.p8
+          echo "${{ secrets.SNOWFLAKE_PRIVATE_KEY }}" | base64 -d > rsa_key.p8
           chmod 600 rsa_key.p8
 
       - name: 5. Run Python Extraction
