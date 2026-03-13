@@ -1,9 +1,9 @@
 name: Daily Snowflake Pipeline
 
 on:
-  schedule:
-    # Runs at 12:00 UTC (8:00 AM EST) every single day
-    - cron: '0 12 * * *'
+  # schedule:
+    
+    # - cron: '0 12 * * *' # Runs at 12:00 UTC (8:00 AM EST) every single day
   # This line allows you to trigger it manually via a button in the GitHub UI
   workflow_dispatch: 
   pull_request: 

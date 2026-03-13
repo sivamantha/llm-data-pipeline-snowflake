@@ -1,25 +1,38 @@
-# Snowflake & dbt: LLM Instruction-Tuning Data Pipeline
+# Wikipedia RAG Pipeline
 
-## Project Overview
-This project demonstrates an enterprise-grade, code-first data pipeline designed to ingest, process, and transform unstructured text data into high-quality training datasets for Large Language Models (LLMs). 
+An end-to-end data engineering pipeline that extracts Wikipedia articles, transforms them through a Medallion architecture in Snowflake, and serves them to an AI chatbot via vector search.
 
-Moving away from UI-driven ELT, this architecture utilizes **dbt-core** and **Snowpark (Python)** to build a strictly version-controlled, Medallion-architecture data warehouse natively inside **Snowflake**.
+Built to bridge traditional data engineering (ETL/dbt) and modern AI (vector databases/LLMs), with full CI/CD automation.
 
-## Architecture & Stack
-* **Data Warehouse & Compute:** Snowflake (Isolated Virtual Warehouses)
-* **Transformation & Orchestration:** dbt (Data Build Tool)
-* **Data Processing (Text/LLM):** Snowpark (Python 3.12)
-* **Version Control & CI/CD:** Git, GitHub Actions
-* **Security:** RSA Key-Pair Authentication (Machine-to-Machine)
+**Wikipedia API → Snowflake Stage → Bronze (Raw) → Silver (Cleaned) → Gold (Embeddings) → RAG Chatbot**
 
-## Data Flow (Medallion Architecture)
-1. **Extraction:** A local Python extraction script pulls raw text documents and uses the Snowflake Python Connector to `PUT` them into a secure internal Snowflake Stage (`raw_text_stage`).
-2. **Bronze Layer (Raw):** dbt maps the internal stage to a structured table, establishing an immutable history of raw text payloads.
-3. **Silver Layer (Cleaned & Chunked):** dbt executes Snowpark Python models to clean the text, remove PII, and chunk the documents into LLM-optimized token limits (e.g., 512 tokens).
-4. **Gold Layer (Ready):** Finalized vector embeddings and instruction-tuning pairs, ready for downstream AI consumption.
+## Tech Stack
 
-## Security & Governance
-This project implements strict Enterprise Role-Based Access Control (RBAC):
-* **Separation of Compute:** Dedicated, auto-suspending virtual warehouses (`dbt_dev_wh`) to prevent resource contention.
-* **Service Accounts:** All automated deployments run via a locked-down service account (`dbt_svc_user`), not a personal developer login, utilizing the `dbt_dev_role`.
-* **Secret Management:** Passwords are disabled for machine roles. Authentication is handled via 2048-bit RSA Private/Public Key-Pairs.
+| Component      | Tool                   |
+| -------------- | ---------------------- |
+| Database       | Snowflake (Cortex AI)  |
+| Transformation | dbt                    |
+| Language       | Python 3.12            |
+| Automation     | GitHub Actions (daily) |
+| Security       | RSA Key-Pair Auth      |
+
+## Pipeline
+
+1. **Extraction** — Python pulls article text from the Wikipedia API and stages it in Snowflake.
+2. **Bronze** — Raw text loaded as-is for full audit trail.
+3. **Silver** — dbt models clean, filter, and standardize. Tests enforce row counts, null checks, and minimum text length before promotion.
+4. **Gold** — Snowflake Cortex generates 768-dimension vector embeddings for semantic search.
+5. **Chatbot** — Converts your question to a vector, finds the closest matches in Gold, and passes context to an LLM for a natural-language answer.
+
+## Setup
+
+Requires a Snowflake account with Cortex AI enabled and RSA key-pair authentication.
+
+```bash
+pip install -r requirements.txt
+python scripts/extract_docs.py
+dbt run && dbt test
+python scripts/rag_chatbot.py
+```
+
+> Runs daily in production via GitHub Actions. See `.github/workflows/` for CI/CD config.
