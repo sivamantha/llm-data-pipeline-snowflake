@@ -4,7 +4,9 @@ An end-to-end data engineering pipeline that extracts Wikipedia articles, transf
 
 Built to bridge traditional data engineering (ETL/dbt) and modern AI (vector databases/LLMs), with full CI/CD automation.
 
-**Wikipedia API → Snowflake Stage → Bronze (Raw) → Silver (Cleaned) → Gold (Embeddings) → RAG Chatbot**
+Architecture
+
+![Architecture Diagram](docs/architecture_diagram.png)
 
 ## Tech Stack
 
