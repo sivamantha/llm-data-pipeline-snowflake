@@ -9,3 +9,6 @@ logs/
 
 # Local dbt profiles (contains credentials)
 profiles.yml
+.env
+
+raw_docs/

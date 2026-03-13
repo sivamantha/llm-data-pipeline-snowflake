@@ -1,0 +1,35 @@
+version: 2
+
+models:
+  # 1. Testing the Silver Layer
+  - name: int_wikipedia_chunks
+    description: "Filtered text chunks with a minimum word count."
+    columns:
+      - name: topic_name
+        description: "The name of the Wikipedia article."
+        tests:
+          - not_null
+      - name: chunk_text
+        description: "The raw text of the chunk."
+        tests:
+          - not_null
+
+  # 2. Testing the Gold Layer (The most critical)
+  - name: fct_wikipedia_embeddings
+    description: "The final vector database table with Snowflake Cortex embeddings."
+    columns:
+      - name: topic_name
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: 
+                  - "Data engineering"
+                  - "Large language model"
+                  - "Retrieval-augmented generation"
+                  - "Vector database"
+      
+      - name: chunk_embedding
+        description: "The 768-dimensional vector representation."
+        tests:
+          - not_null

@@ -29,8 +29,22 @@ clean-targets:         # directories to be removed by `dbt clean`
 # In this example config, we tell dbt to build all models in the example/
 # directory as views. These settings can be overridden in the individual model
 # files using the `{{ config(...) }}` macro.
+# Configuring models
+# Full documentation: https://docs.getdbt.com/docs/configuring-models
+
 models:
   llm_pipeline:
-    # Config indicated by + and applies to all files under models/example/
-    example:
+    # Everything in the models/bronze folder goes to the BRONZE schema
+    bronze:
+      +schema: bronze
+      +materialized: table
+      
+    # Everything in the models/silver folder goes to the SILVER schema
+    silver:
+      +schema: silver
       +materialized: view
+      
+    # Everything in the models/gold folder goes to the GOLD schema
+    gold:
+      +schema: gold
+      +materialized: table
