@@ -1,0 +1,73 @@
+name: Daily Snowflake Pipeline
+
+on:
+  schedule:
+    # Runs at 12:00 UTC (8:00 AM EST) every single day
+    - cron: '0 12 * * *'
+  # This line allows you to trigger it manually via a button in the GitHub UI
+  workflow_dispatch: 
+
+jobs:
+  run-data-pipeline:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 1. Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 2. Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: 3. Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: 4. Reconstruct RSA Key
+        # This securely takes your massive text key from GitHub Secrets and turns it back into a file
+        run: |
+          echo "${{ secrets.SNOWFLAKE_PRIVATE_KEY }}" > rsa_key.p8
+          chmod 600 rsa_key.p8
+
+      - name: 5. Run Python Extraction
+        # We pass the secrets as environment variables so your Python os.getenv() can find them
+        env:
+          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_ROLE }}
+          SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+          SNOWFLAKE_DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
+          SNOWFLAKE_SCHEMA: 'bronze'
+          SNOWFLAKE_KEY_PATH: 'rsa_key.p8'
+        run: python scripts/extract_docs.py
+
+      - name: 6. Reconstruct dbt profiles.yml
+        # This dynamically builds the hidden dbt connection file on the cloud server
+        run: |
+          mkdir -p ~/.dbt
+          cat << EOF > ~/.dbt/profiles.yml
+          llm_pipeline:
+            target: dev
+            outputs:
+              dev:
+                type: snowflake
+                account: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+                user: ${{ secrets.SNOWFLAKE_USER }}
+                private_key_path: "$(pwd)/rsa_key.p8"
+                role: ${{ secrets.SNOWFLAKE_ROLE }}
+                database: ${{ secrets.SNOWFLAKE_DATABASE }}
+                warehouse: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+                schema: bronze
+                threads: 4
+                client_session_keep_alive: False
+          EOF
+
+      - name: 7. Run dbt Transformations & AI Embeddings
+        run: |
+          dbt run
+          
+      - name: 8. Run dbt QA Tests
+        run: |
+          dbt test
